@@ -37,19 +37,21 @@ impl MerkleTree {
         }
     }
 
-    /// Constructs a Merkle tree from given input data
-    /// The input length must be a (nonzero) power of two
+    /// Constructs a Merkle tree from given leaf blobs
+    /// Length of the input must be a nonzero power of two
     pub fn construct(input: &[Data]) -> MerkleTree {
         assert!(input.len().is_power_of_two());
 
         let depth = (input.len().trailing_zeros() + 1) as usize;
 
+        // Unfinished subtrees that are waiting for corresponding right-side trees
         let mut left_side: Vec<Option<MerkleTree>> = (0..depth).map(|_| None).collect();
 
         for item in input {
             let mut right = MerkleTree::leaf(hash_data(item));
-            // Propagate
+            // Propagate and merge subtrees
             for ls in left_side.iter_mut() {
+                // Merge with left-side node if it exists
                 if let Some(left) = ls.take() {
                     right = MerkleTree::branch(left, right);
                 } else {
@@ -59,6 +61,7 @@ impl MerkleTree {
             }
         }
 
+        // The topmost node is root of the merkle tree
         left_side.pop().unwrap().unwrap()
     }
 
